@@ -79,9 +79,20 @@ def doctor() -> None:
 
 
 @app.command()
-def record(out: str = typer.Option(..., "--out", help="Session directory to write to.")) -> None:
-    """Record a macOS demonstration to a session directory."""
-    raise typer.Exit(_not_implemented("record", out=out))
+def record(
+    out: str = typer.Option(..., "--out", help="Session directory to write to."),
+    frame_interval: float = typer.Option(
+        2.0, "--frame-interval", help="Seconds between screenshots."
+    ),
+) -> None:
+    """Record a macOS demonstration to a session directory. Ctrl-C to stop."""
+    from pathlib import Path
+
+    from skill_forge.recorder.session import RecorderSession
+
+    setup_logging()
+    rc = RecorderSession(Path(out), frame_interval=frame_interval).run()
+    raise typer.Exit(rc)
 
 
 @app.command()
