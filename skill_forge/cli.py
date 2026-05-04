@@ -104,8 +104,13 @@ def replay(
 
 @app.command(name="_devsnap", hidden=True)
 def _devsnap() -> None:
-    """Hidden: print snapshot_focused() as JSON. Phase 1."""
-    raise typer.Exit(_not_implemented("_devsnap"))
+    """Hidden: print snapshot_focused() as JSON for the currently focused element."""
+    import json
+
+    from skill_forge.recorder.ax_snapshot import snapshot_focused
+
+    snap = snapshot_focused()
+    print(json.dumps(snap, indent=2, default=str))
 
 
 def _ok(ok: bool) -> str:
