@@ -183,7 +183,13 @@ class RecorderSession:
 
             kind, ts, data = item
 
-            if kind != "keydown" and not self._text_buf.is_empty():
+            # Flush typed text buffer on user-initiated events only — frame
+            # events from the screen-capture thread are passive timestamps
+            # and must NOT fragment a typing run.
+            if (
+                kind not in ("keydown", "frame")
+                and not self._text_buf.is_empty()
+            ):
                 self._flush_text_buffer(ts)
 
             if kind == "click":

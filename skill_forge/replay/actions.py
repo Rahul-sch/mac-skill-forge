@@ -114,12 +114,18 @@ def type_text(text: str) -> None:
 
     One down/up pair per char with a 10ms inter-key sleep so receivers see
     distinct events rather than a coalesced burst.
+
+    Explicitly clears modifier flags on every event — CGEventCreateKeyboardEvent
+    with source=None inherits the current modifier state, so a recent cmd+N
+    leaks "cmd" onto subsequent typed chars.
     """
     for ch in text:
         ev_down = Quartz.CGEventCreateKeyboardEvent(None, 0, True)
+        Quartz.CGEventSetFlags(ev_down, 0)
         Quartz.CGEventKeyboardSetUnicodeString(ev_down, len(ch), ch)
         Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev_down)
         ev_up = Quartz.CGEventCreateKeyboardEvent(None, 0, False)
+        Quartz.CGEventSetFlags(ev_up, 0)
         Quartz.CGEventKeyboardSetUnicodeString(ev_up, len(ch), ch)
         Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev_up)
         time.sleep(_INTER_KEY_SLEEP_S)
