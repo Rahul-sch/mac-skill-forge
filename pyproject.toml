@@ -38,6 +38,7 @@ packages = ["skill_forge"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = ["examples/calculator_demo"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]

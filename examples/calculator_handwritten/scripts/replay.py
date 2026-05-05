@@ -22,7 +22,6 @@ import sys
 
 from skill_forge.replay.actions import app_launch, click, wait
 from skill_forge.replay.ax_resolve import find
-
 from skill_forge.utils.ax_helpers import get_attr
 
 CALC_BUNDLE = "com.apple.calculator"

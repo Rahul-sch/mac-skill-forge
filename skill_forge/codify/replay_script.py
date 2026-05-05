@@ -44,8 +44,10 @@ def _step_call(step: Step) -> str:
         mods = step.args.get("modifiers", [])
         return f"# {step.name}\n    press_key({keycode!r}, modifiers={mods!r})"
     if step.action == "wait":
-        seconds = step.args.get("seconds", 0.0)
-        return f"# {step.name}\n    wait({seconds!r})"
+        seconds = step.args.get("seconds")
+        if seconds is None or float(seconds) <= 0:
+            seconds = 1.0  # defensive default — wait(0) races right after launch
+        return f"# {step.name}\n    wait({float(seconds)!r})"
     if step.action == "app_launch":
         bundle = step.args.get("bundle_id", "")
         return f"# {step.name}\n    app_launch({bundle!r})"

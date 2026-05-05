@@ -99,9 +99,24 @@ def record(
 def build(
     session: str = typer.Argument(..., help="Path to a recorded session directory."),
     out: str = typer.Option(..., "--out", help="Where to write SKILL.md and scripts/replay.py."),
+    mock: bool = typer.Option(False, "--mock", help="Bypass all LLM calls; emit a fixed Skill."),
 ) -> None:
     """Run the 4-stage Claude pipeline over a recorded session."""
-    raise typer.Exit(_not_implemented("build", session=session, out=out))
+    from pathlib import Path
+
+    from skill_forge.codify.replay_script import skill_to_replay_py
+    from skill_forge.codify.skill_md import skill_to_md
+    from skill_forge.pipeline.orchestrator import build_skill
+
+    setup_logging()
+    skill = build_skill(Path(session), mock=mock)
+    out_dir = Path(out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "SKILL.md").write_text(skill_to_md(skill), encoding="utf-8")
+    scripts_dir = out_dir / "scripts"
+    scripts_dir.mkdir(exist_ok=True)
+    (scripts_dir / "replay.py").write_text(skill_to_replay_py(skill), encoding="utf-8")
+    console.print(f"[green]wrote[/green] {out_dir}/SKILL.md and scripts/replay.py")
 
 
 @app.command()
