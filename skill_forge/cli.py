@@ -108,9 +108,17 @@ def build(
 def replay(
     skill: str = typer.Argument(..., help="Path to a skill directory containing SKILL.md."),
     params: str = typer.Option("{}", "--params", help="JSON dict of parameters."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Validate without launching."),
 ) -> None:
     """Replay a skill against the live UI."""
-    raise typer.Exit(_not_implemented("replay", skill=skill, params=params))
+    import json as _json
+    from pathlib import Path
+
+    from skill_forge.replay.runner import run_skill
+
+    setup_logging()
+    rc = run_skill(Path(skill), _json.loads(params), dry_run=dry_run)
+    raise typer.Exit(rc)
 
 
 @app.command(name="_devsnap", hidden=True)
