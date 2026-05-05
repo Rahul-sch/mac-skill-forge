@@ -65,15 +65,16 @@ def doctor() -> None:
         table.add_row("Accessibility permission", _ok(False), "PyObjC not available")
         table.add_row("Screen Recording permission", _ok(False), "PyObjC not available")
 
-    api_key_set = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    table.add_row(
-        "ANTHROPIC_API_KEY",
-        _ok(api_key_set),
-        "" if api_key_set else "export ANTHROPIC_API_KEY=...",
+    groq_set = bool(os.environ.get("GROQ_API_KEY"))
+    anth_set = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    key_set = groq_set or anth_set
+    detail = "GROQ_API_KEY set" if groq_set else (
+        "ANTHROPIC_API_KEY set" if anth_set else "export GROQ_API_KEY=... or ANTHROPIC_API_KEY=..."
     )
+    table.add_row("LLM API key", _ok(key_set), detail)
 
-    anthropic_ok, anthropic_detail = _try_import("anthropic")
-    table.add_row("anthropic SDK", _ok(anthropic_ok), anthropic_detail)
+    httpx_ok, httpx_detail = _try_import("httpx")
+    table.add_row("httpx (LLM client)", _ok(httpx_ok), httpx_detail)
 
     console.print(table)
 

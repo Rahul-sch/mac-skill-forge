@@ -14,3 +14,5 @@ htmlcov/
 last_failed_response.json
 examples/calculator_demo/
 sessions/*/_pipeline_debug/
+docs/*.mp4
+
