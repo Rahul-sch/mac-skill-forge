@@ -6,15 +6,14 @@ Record yourself doing something on macOS — sending the morning status email, f
 
 > ⚠️ **v0**: macOS 14+ only. Tested on Apple Silicon. The 8-step status-email demo built and replayed end-to-end. Selectors are AX-tree only — if an app doesn't expose Accessibility, this won't work yet.
 
-![demo placeholder](docs/demo.gif) <!-- record a real one with `scripts/make_gif.sh` -->
-
 ## Quickstart
 
 ```bash
 git clone https://github.com/Rahul-sch/mac-skill-forge.git
 cd mac-skill-forge
+brew install uv                # if you don't already have it
 uv venv && source .venv/bin/activate && uv pip install -e ".[dev]"
-export GROQ_API_KEY=gsk_...   # or ANTHROPIC_API_KEY=sk-ant-...
+export GROQ_API_KEY=gsk_...    # get one free at https://console.groq.com
 forge doctor                   # verify environment + permissions
 ```
 

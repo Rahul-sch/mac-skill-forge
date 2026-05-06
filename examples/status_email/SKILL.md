@@ -8,12 +8,12 @@ description: Sends a new email with specified recipient, subject, and body using
 Sends a new email with specified recipient, subject, and body using the Mail app
 
 ## Parameters
-- `recipient` (string, default=rahul.bainsla2005@gmail.com): Recipient email
+- `recipient` (string, default=you@example.com): Recipient email
 - `subject` (string, default=Morning status — 2026-05-04): Email subject
 - `body` (string, default=Yesterday: shipped phase 5 of skill-forge. Today: phase 6 demo recording. Blockers: none.): Email body
 
 ## How to invoke
-Run: `python scripts/replay.py --params '{"recipient": "rahul.bainsla2005@gmail.com", "subject": "Morning status \u2014 2026-05-04", "body": "Yesterday: shipped phase 5 of skill-forge. Today: phase 6 demo recording. Blockers: none."}'`
+Run: `python scripts/replay.py --params '{"recipient": "you@example.com", "subject": "Morning status \u2014 2026-05-04", "body": "Yesterday: shipped phase 5 of skill-forge. Today: phase 6 demo recording. Blockers: none."}'`
 
 ## Steps (for reference; replay.py is the source of truth)
 1. Launch Mail app

@@ -119,9 +119,10 @@ class RecorderSession:
         if tap is None:
             self._cleanup()
             print(
-                "ERROR: CGEventTapCreate returned NULL. Grant Accessibility (and "
-                "Input Monitoring if prompted) to Visual Studio Code - Insiders, "
-                "restart it, then re-run."
+                "ERROR: CGEventTapCreate returned NULL. Grant Accessibility "
+                "(and Input Monitoring if prompted) to the terminal app you "
+                "launched `forge` from in System Settings → Privacy & "
+                "Security, fully quit and relaunch it, then re-run."
             )
             signal.signal(signal.SIGINT, prev_sigint)
             return 1

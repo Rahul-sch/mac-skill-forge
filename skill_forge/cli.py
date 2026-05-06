@@ -66,12 +66,8 @@ def doctor() -> None:
         table.add_row("Screen Recording permission", _ok(False), "PyObjC not available")
 
     groq_set = bool(os.environ.get("GROQ_API_KEY"))
-    anth_set = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    key_set = groq_set or anth_set
-    detail = "GROQ_API_KEY set" if groq_set else (
-        "ANTHROPIC_API_KEY set" if anth_set else "export GROQ_API_KEY=... or ANTHROPIC_API_KEY=..."
-    )
-    table.add_row("LLM API key", _ok(key_set), detail)
+    detail = "GROQ_API_KEY set" if groq_set else "export GROQ_API_KEY=gsk_..."
+    table.add_row("LLM API key", _ok(groq_set), detail)
 
     httpx_ok, httpx_detail = _try_import("httpx")
     table.add_row("httpx (LLM client)", _ok(httpx_ok), httpx_detail)

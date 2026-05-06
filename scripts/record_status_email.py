@@ -33,7 +33,7 @@ SUBJECT_FIELD = f"{WIN}/AXTextField[id='Mail.subjectField']"
 KEYCODE_N = 45
 KEYCODE_TAB = 48
 
-RECIPIENT = "rahul.bainsla2005@gmail.com"
+RECIPIENT = "you@example.com"
 SUBJECT = "Morning status — 2026-05-04"
 BODY = (
     "Yesterday: shipped phase 5 of skill-forge. "

@@ -5,8 +5,8 @@ OpenAI-compatible chat/completions endpoint to work around Anthropic
 billing. The wrapper shape (call_json) is provider-agnostic — every stage
 calls call_json(system, user, model) and gets back parsed JSON.
 
-Reads API key from GROQ_API_KEY (preferred) or ANTHROPIC_API_KEY (legacy
-name still tolerated by the doctor).
+Reads API key from GROQ_API_KEY. The wire is Groq-only; an Anthropic key
+posted to Groq just 401s, so we don't accept one.
 
 Strips ```json fences if present. On parse failure dumps the raw response
 to ./last_failed_response.json (gitignored) and raises BadJSONFromModel.
@@ -43,11 +43,9 @@ class BadJSONFromModel(RuntimeError):
 
 
 def _api_key() -> str:
-    key = os.environ.get("GROQ_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+    key = os.environ.get("GROQ_API_KEY")
     if not key:
-        raise RuntimeError(
-            "no API key in env (set GROQ_API_KEY or ANTHROPIC_API_KEY)"
-        )
+        raise RuntimeError("no API key in env (set GROQ_API_KEY)")
     return key
 
 
