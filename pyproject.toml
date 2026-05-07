@@ -10,16 +10,33 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 authors = [{ name = "Rahul" }]
+keywords = ["macos", "automation", "accessibility", "llm", "claude", "skills"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: MacOS X",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Desktop Environment",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "pyobjc-core",
     "pyobjc-framework-Cocoa",
     "pyobjc-framework-Quartz",
     "pyobjc-framework-ApplicationServices",
-    "anthropic>=0.40",
+    "httpx>=0.25",
     "typer>=0.12",
     "rich>=13",
-    "python-dotenv",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Rahul-sch/mac-skill-forge"
+Repository = "https://github.com/Rahul-sch/mac-skill-forge"
+Issues = "https://github.com/Rahul-sch/mac-skill-forge/issues"
 
 [project.optional-dependencies]
 dev = [

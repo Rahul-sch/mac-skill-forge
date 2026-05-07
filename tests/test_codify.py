@@ -80,7 +80,7 @@ Say hello
 - `name` (string, required): who to greet
 
 ## How to invoke
-Run: `python scripts/replay.py --params '{"name": "..."}'`
+Run: `forge replay <this-dir> --params '{"name": "..."}'`
 
 ## Steps (for reference; replay.py is the source of truth)
 1. Launch app

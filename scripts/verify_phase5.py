@@ -38,8 +38,8 @@ def ok(msg: str) -> None:
 
 
 def main() -> None:
-    if not (os.environ.get("GROQ_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")):
-        fail("no LLM API key in env (set GROQ_API_KEY or ANTHROPIC_API_KEY)")
+    if not os.environ.get("GROQ_API_KEY"):
+        fail("no LLM API key in env (set GROQ_API_KEY)")
     if not SESSION_DIR.exists():
         fail(f"missing session at {SESSION_DIR} — run scripts/verify_phase2.py first")
 

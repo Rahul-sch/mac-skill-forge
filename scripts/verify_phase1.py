@@ -1,8 +1,8 @@
 """Phase 1 live verification.
 
-Run AFTER granting Accessibility to Visual Studio Code - Insiders
-(System Settings -> Privacy & Security -> Accessibility -> + ... -> toggle on)
-and after restarting this Claude Code window.
+Run AFTER granting Accessibility to the terminal app you launched this
+script from (System Settings -> Privacy & Security -> Accessibility ->
++ ... -> toggle on) and after fully quitting and relaunching it.
 
     .venv/bin/python scripts/verify_phase1.py
 
@@ -83,8 +83,9 @@ def find_eight_button(app_elem):
 def main() -> None:
     if not accessibility_granted():
         fail(
-            "AXIsProcessTrusted() == False. Grant Accessibility to "
-            "'Visual Studio Code - Insiders' and restart Claude Code."
+            "AXIsProcessTrusted() == False. Grant Accessibility to the "
+            "terminal app you launched this script from, fully quit and "
+            "relaunch it, then re-run."
         )
     ok("Accessibility permission")
 

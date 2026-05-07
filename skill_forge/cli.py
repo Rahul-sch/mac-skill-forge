@@ -25,6 +25,23 @@ app = typer.Typer(
 console = Console()
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        from skill_forge import __version__
+
+        console.print(f"skill-forge {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _root(
+    version: bool = typer.Option(
+        False, "--version", callback=_version_callback, is_eager=True, help="Show version and exit."
+    ),
+) -> None:
+    pass
+
+
 @app.command()
 def doctor() -> None:
     """Check that the local environment is ready for record/build/replay."""

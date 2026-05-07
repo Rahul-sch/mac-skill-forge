@@ -12,7 +12,7 @@ Add ${a} and ${b} using the macOS Calculator app.
 - `b` (number, required): second operand
 
 ## How to invoke
-Run: `python scripts/replay.py --params '{"a": 2, "b": 3}'`
+Run: `forge replay <this-dir> --params '{"a": 2, "b": 3}'`
 
 ## Steps (for reference; replay.py is the source of truth)
 1. Launch Calculator (`AXApplication[bundle='com.apple.calculator']`)

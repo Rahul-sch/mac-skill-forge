@@ -1,5 +1,9 @@
 # Skill Forge
 
+[![ci](https://github.com/Rahul-sch/mac-skill-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/Rahul-sch/mac-skill-forge/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://www.apple.com/macos/)
+
 **Teach your Mac once, forever after any Claude agent can replay it.**
 
 Record yourself doing something on macOS — sending the morning status email, filling out a daily journal, anything that's a slog of clicks and typing. Skill Forge watches the demonstration, asks an LLM to figure out the structure and which inputs are parameters, and emits a `SKILL.md` plus a generated Python script you can run with different parameters next time. Your future self stops doing the chore.
@@ -8,16 +12,27 @@ Record yourself doing something on macOS — sending the morning status email, f
 
 ## Quickstart
 
+The fast path (no clone needed; just gets you the `forge` CLI):
+
+```bash
+brew install pipx && pipx ensurepath
+pipx install git+https://github.com/Rahul-sch/mac-skill-forge.git
+export GROQ_API_KEY=gsk_...    # get one free at https://console.groq.com
+forge doctor                   # verify environment + permissions
+```
+
+Or, for hacking on it:
+
 ```bash
 git clone https://github.com/Rahul-sch/mac-skill-forge.git
 cd mac-skill-forge
 brew install uv                # if you don't already have it
 uv venv && source .venv/bin/activate && uv pip install -e ".[dev]"
-export GROQ_API_KEY=gsk_...    # get one free at https://console.groq.com
-forge doctor                   # verify environment + permissions
+export GROQ_API_KEY=gsk_...
+forge doctor
 ```
 
-`forge doctor` checks Python, macOS, PyObjC, Accessibility/Screen Recording grants, and your API key. Grant permissions to your terminal (or to VSCode if you're inside an integrated terminal) when prompted.
+`forge doctor` checks Python, macOS, PyObjC, Accessibility/Screen Recording grants, and your API key. **Grant Accessibility and Screen Recording to the terminal app you launched `forge` from** (System Settings → Privacy & Security → Accessibility / Screen Recording → toggle on), then **fully quit and relaunch the terminal** before re-running. macOS only re-reads the grants on a clean launch.
 
 Then the loop:
 
