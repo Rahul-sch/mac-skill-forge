@@ -7,10 +7,21 @@ fixture below must be updated and any downstream regenerations re-run.
 from __future__ import annotations
 
 import ast
+import json
 
+import pytest
+
+from skill_forge.codify.manifest import load_manifest, manifest_to_json
 from skill_forge.codify.replay_script import skill_to_replay_py
 from skill_forge.codify.skill_md import skill_to_md
-from skill_forge.pipeline.schema import VALID_ACTIONS, Parameter, Skill, Step
+from skill_forge.pipeline.schema import (
+    VALID_ACTIONS,
+    Parameter,
+    Skill,
+    SkillValidationError,
+    Step,
+    validate_skill,
+)
 
 
 def _hello_skill() -> Skill:
@@ -45,7 +56,7 @@ def _hello_skill() -> Skill:
 
 def test_valid_actions_is_frozen():
     assert VALID_ACTIONS == frozenset(
-        {"click", "type", "press_key", "wait", "app_launch"}
+        {"click", "type", "press_key", "wait", "app_launch", "scroll"}
     )
 
 
@@ -82,7 +93,7 @@ Say hello
 ## How to invoke
 Run: `forge replay <this-dir> --params '{"name": "..."}'`
 
-## Steps (for reference; replay.py is the source of truth)
+## Steps (for reference; skill.json is the source of truth)
 1. Launch app
 2. Type greeting
 """
@@ -167,18 +178,30 @@ if __name__ == "__main__":
 '''
 
 
-def test_skill_to_replay_py_byte_stable():
-    assert skill_to_replay_py(_hello_skill()) == EXPECTED_PY
+def test_skill_to_replay_py_is_safe_manifest_wrapper():
+    output = skill_to_replay_py(_hello_skill())
+    assert "run_manifest" in output
+    assert ' / "skill.json"' in output
+    assert "app_launch('com.example.app')" not in output
 
 
 def test_skill_to_replay_py_is_valid_python():
     ast.parse(skill_to_replay_py(_hello_skill()))
 
 
-def test_emitted_replay_preserves_placeholder_syntax():
-    out = skill_to_replay_py(_hello_skill())
-    assert "${name}" in out
-    assert "$\\{name\\}" not in out  # not over-escaped
+def test_manifest_preserves_placeholder_and_round_trips(tmp_path):
+    path = tmp_path / "skill.json"
+    path.write_text(manifest_to_json(_hello_skill()), encoding="utf-8")
+    raw = json.loads(path.read_text())
+    assert raw["steps"][1]["args"]["text"] == "hello ${name}"
+    assert load_manifest(path) == _hello_skill()
+
+
+def test_validation_rejects_unknown_actions():
+    skill = _hello_skill()
+    skill.steps[0].action = "shell"
+    with pytest.raises(SkillValidationError, match="unsupported action"):
+        validate_skill(skill)
 
 
 def test_handwritten_calculator_skill_md_parses():

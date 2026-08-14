@@ -36,7 +36,7 @@ def skill_to_md(skill: Skill) -> str:
     parts.append("## How to invoke")
     parts.append(f"Run: `forge replay <this-dir> --params '{_example_params(skill)}'`")
     parts.append("")
-    parts.append("## Steps (for reference; replay.py is the source of truth)")
+    parts.append("## Steps (for reference; skill.json is the source of truth)")
     for i, step in enumerate(skill.steps, start=1):
         parts.append(f"{i}. {step.name}")
     parts.append("")

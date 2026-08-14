@@ -13,7 +13,7 @@ import json
 import logging
 from pathlib import Path
 
-from skill_forge.pipeline.schema import Parameter, Skill, Step
+from skill_forge.pipeline.schema import Parameter, Skill, Step, validate_skill
 from skill_forge.pipeline.stages import abstractor, parameterizer, segmenter, validator
 
 MODEL = "llama-3.3-70b-versatile"
@@ -68,11 +68,11 @@ def build_skill(session_dir: Path, mock: bool = False) -> Skill:
         len(final.get("steps", [])),
     )
 
-    return _assemble(final)
+    return validate_skill(_assemble(final))
 
 
 def _assemble(final: dict) -> Skill:
-    return Skill(
+    return validate_skill(Skill(
         name=str(final["skill_name"]),
         description=str(final["skill_description"]),
         parameters=[
@@ -94,7 +94,7 @@ def _assemble(final: dict) -> Skill:
             )
             for s in final.get("steps", [])
         ],
-    )
+    ))
 
 
 def _mock_skill() -> Skill:

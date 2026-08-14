@@ -8,8 +8,11 @@ SelectorNotFound suggestions.
 
 from __future__ import annotations
 
+import pytest
+
+from skill_forge.pipeline.schema import Parameter, Skill
 from skill_forge.replay.ax_resolve import SelectorNotFound, _levenshtein
-from skill_forge.replay.runner import parse_frontmatter, parse_parameters
+from skill_forge.replay.runner import parse_frontmatter, parse_parameters, resolve_params
 
 CALC_MD = """\
 ---
@@ -105,3 +108,26 @@ def test_selector_not_found_message_includes_suggestion():
     assert "com.apple.calculator" in msg
     assert err.selector == "AXButton[id='Wrong']"
     assert err.suggested == "AXButton[id='Right']"
+
+
+def test_resolve_params_applies_and_coerces_defaults():
+    skill = Skill(
+        name="defaults",
+        description="test defaults",
+        parameters=[Parameter("n", "number", "count", "42")],
+        steps=[],
+    )
+    assert resolve_params(skill, {}) == {"n": 42}
+
+
+def test_resolve_params_rejects_missing_and_bad_types():
+    skill = Skill(
+        name="required",
+        description="test required values",
+        parameters=[Parameter("when", "date", "date", None)],
+        steps=[],
+    )
+    with pytest.raises(ValueError, match="missing required"):
+        resolve_params(skill, {})
+    with pytest.raises(TypeError, match="ISO date"):
+        resolve_params(skill, {"when": "tomorrow"})

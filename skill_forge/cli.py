@@ -118,6 +118,7 @@ def build(
     """Run the 4-stage Claude pipeline over a recorded session."""
     from pathlib import Path
 
+    from skill_forge.codify.manifest import manifest_to_json
     from skill_forge.codify.replay_script import skill_to_replay_py
     from skill_forge.codify.skill_md import skill_to_md
     from skill_forge.pipeline.orchestrator import build_skill
@@ -127,10 +128,13 @@ def build(
     out_dir = Path(out)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "SKILL.md").write_text(skill_to_md(skill), encoding="utf-8")
+    (out_dir / "skill.json").write_text(manifest_to_json(skill), encoding="utf-8")
     scripts_dir = out_dir / "scripts"
     scripts_dir.mkdir(exist_ok=True)
     (scripts_dir / "replay.py").write_text(skill_to_replay_py(skill), encoding="utf-8")
-    console.print(f"[green]wrote[/green] {out_dir}/SKILL.md and scripts/replay.py")
+    console.print(
+        f"[green]wrote[/green] {out_dir}/SKILL.md, skill.json, and scripts/replay.py"
+    )
 
 
 @app.command()
@@ -138,6 +142,11 @@ def replay(
     skill: str = typer.Argument(..., help="Path to a skill directory containing SKILL.md."),
     params: str = typer.Option("{}", "--params", help="JSON dict of parameters."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Validate without launching."),
+    allow_script: bool = typer.Option(
+        False,
+        "--allow-script",
+        help="Allow a reviewed legacy skill to execute arbitrary scripts/replay.py.",
+    ),
 ) -> None:
     """Replay a skill against the live UI."""
     import json as _json
@@ -146,7 +155,15 @@ def replay(
     from skill_forge.replay.runner import run_skill
 
     setup_logging()
-    rc = run_skill(Path(skill), _json.loads(params), dry_run=dry_run)
+    try:
+        parsed = _json.loads(params)
+    except _json.JSONDecodeError as exc:
+        console.print(f"[red]ERROR[/red]: invalid --params JSON: {exc}")
+        raise typer.Exit(2) from None
+    if not isinstance(parsed, dict):
+        console.print("[red]ERROR[/red]: --params must decode to a JSON object")
+        raise typer.Exit(2)
+    rc = run_skill(Path(skill), parsed, dry_run=dry_run, allow_script=allow_script)
     raise typer.Exit(rc)
 
 

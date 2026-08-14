@@ -21,6 +21,7 @@ from typing import Any
 import Quartz
 from ApplicationServices import (
     AXUIElementPerformAction,
+    AXUIElementSetAttributeValue,
     AXValueGetValue,
     kAXValueCGPointType,
     kAXValueCGSizeType,
@@ -62,6 +63,18 @@ def click(target: str | tuple[float, float], button: str = "left") -> None:
         )
     x, y = center
     _coord_click(x, y, button)
+
+
+def focus(selector: str) -> None:
+    """Focus a target deterministically before typing or scrolling."""
+    elem = find(selector)
+    try:
+        err = AXUIElementSetAttributeValue(elem, "AXFocused", True)
+    except Exception as exc:
+        log.debug("AXFocused raised %r; falling back to click", exc)
+        err = -1
+    if err != 0:
+        click(selector)
 
 
 def _try_axpress(elem: Any) -> bool:
@@ -145,6 +158,20 @@ def press_key(keycode: int, modifiers: Sequence[str] = ()) -> None:
     Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev_up)
 
 
+def scroll(dx: float = 0, dy: float = 0) -> None:
+    """Post a pixel-based two-axis scroll event."""
+    event = Quartz.CGEventCreateScrollWheelEvent(
+        None,
+        Quartz.kCGScrollEventUnitPixel,
+        2,
+        int(dy),
+        int(dx),
+    )
+    if event is None:
+        raise RuntimeError("could not create scroll event")
+    Quartz.CGEventPost(Quartz.kCGHIDEventTap, event)
+
+
 def app_launch(bundle_id: str) -> None:
     """Launch (or activate) an app by bundle id. Uses `open -b` for reliability."""
     proc = subprocess.run(
@@ -156,6 +183,19 @@ def app_launch(bundle_id: str) -> None:
         raise RuntimeError(
             f"app_launch({bundle_id!r}) failed: {proc.stderr.strip() or proc.stdout.strip()}"
         )
+
+
+def wait_for_app(bundle_id: str, timeout: float = 5.0) -> None:
+    """Wait until the requested bundle is running after launch/activation."""
+    from AppKit import NSWorkspace
+
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for app in NSWorkspace.sharedWorkspace().runningApplications():
+            if str(app.bundleIdentifier() or "") == bundle_id:
+                return
+        time.sleep(0.1)
+    raise RuntimeError(f"application did not start within {timeout:.1f}s: {bundle_id}")
 
 
 def wait(seconds: float) -> None:
