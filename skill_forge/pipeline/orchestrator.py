@@ -37,6 +37,11 @@ def build_skill(session_dir: Path, mock: bool = False) -> Skill:
     ]
     # Drop frame events — text-only pipeline in v0 (vision is a v0.2 lever).
     events = [e for e in raw if e.get("type") != "frame"]
+    if any(e.get("type") == "secure_input" for e in events):
+        raise ValueError(
+            "recording contains a redacted secure-field step; passwords and other "
+            "secrets must be handled manually before this workflow can be built"
+        )
     log.info("loaded %d events (%d after dropping frames)", len(raw), len(events))
 
     debug_dir = session_dir / "_pipeline_debug"
@@ -54,9 +59,7 @@ def build_skill(session_dir: Path, mock: bool = False) -> Skill:
 
     log.info("[3/4] parameterizer")
     parameterized = parameterizer.run(raw_steps, model=MODEL)
-    (debug_dir / "3_parameterizer.json").write_text(
-        json.dumps(parameterized, indent=2)
-    )
+    (debug_dir / "3_parameterizer.json").write_text(json.dumps(parameterized, indent=2))
     log.info("  -> %d parameters", len(parameterized.get("parameters", [])))
 
     log.info("[4/4] validator")
@@ -72,29 +75,31 @@ def build_skill(session_dir: Path, mock: bool = False) -> Skill:
 
 
 def _assemble(final: dict) -> Skill:
-    return validate_skill(Skill(
-        name=str(final["skill_name"]),
-        description=str(final["skill_description"]),
-        parameters=[
-            Parameter(
-                name=str(p["name"]),
-                type=str(p.get("type", "string")),
-                description=str(p.get("description", "")),
-                default=None if p.get("default") is None else str(p["default"]),
-            )
-            for p in final.get("parameters", [])
-        ],
-        steps=[
-            Step(
-                name=str(s["name"]),
-                action=str(s["action"]),
-                selector=s.get("selector"),
-                args=dict(s.get("args", {})),
-                assertions=list(s.get("assertions", [])),
-            )
-            for s in final.get("steps", [])
-        ],
-    ))
+    return validate_skill(
+        Skill(
+            name=str(final["skill_name"]),
+            description=str(final["skill_description"]),
+            parameters=[
+                Parameter(
+                    name=str(p["name"]),
+                    type=str(p.get("type", "string")),
+                    description=str(p.get("description", "")),
+                    default=None if p.get("default") is None else str(p["default"]),
+                )
+                for p in final.get("parameters", [])
+            ],
+            steps=[
+                Step(
+                    name=str(s["name"]),
+                    action=str(s["action"]),
+                    selector=s.get("selector"),
+                    args=dict(s.get("args", {})),
+                    assertions=list(s.get("assertions", [])),
+                )
+                for s in final.get("steps", [])
+            ],
+        )
+    )
 
 
 def _mock_skill() -> Skill:
@@ -102,9 +107,7 @@ def _mock_skill() -> Skill:
     return Skill(
         name="mock-skill",
         description="A mocked skill used for testing the orchestrator.",
-        parameters=[
-            Parameter(name="x", type="string", description="example", default="hi")
-        ],
+        parameters=[Parameter(name="x", type="string", description="example", default="hi")],
         steps=[
             Step(
                 name="Launch app",

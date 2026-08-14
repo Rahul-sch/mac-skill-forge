@@ -57,3 +57,17 @@ def test_empty_string_returns_no_segments():
 def test_bad_segment_raises():
     with pytest.raises(ValueError):
         parse_selector("not a role!")
+
+
+def test_round_trip_escaped_selector_values():
+    segments = [
+        Segment(role="AXApplication", attrs={"bundle": "com.example.app"}),
+        Segment(role="AXButton", attrs={"title": "Save/Export; Bob's \\ draft"}),
+    ]
+    encoded = serialize_segments(segments)
+    assert parse_selector(encoded) == segments
+
+
+def test_unterminated_selector_quote_raises():
+    with pytest.raises(ValueError, match="unterminated quote"):
+        parse_selector("AXButton[title='Save/Export]")

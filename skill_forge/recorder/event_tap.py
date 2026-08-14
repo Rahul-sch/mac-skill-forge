@@ -53,7 +53,7 @@ def _flags_to_mods(flags: int) -> list[str]:
     return mods
 
 
-def make_callback(out_queue: queue.Queue):
+def make_callback(out_queue: queue.Queue, tap_holder: dict[str, Any] | None = None):
     """Build a CGEventTap callback bound to a queue.
 
     Callback signature is (proxy, type_, event, refcon) -> event.
@@ -62,6 +62,14 @@ def make_callback(out_queue: queue.Queue):
 
     def callback(proxy, type_, event, refcon):  # noqa: ARG001
         try:
+            if type_ in {
+                Quartz.kCGEventTapDisabledByTimeout,
+                Quartz.kCGEventTapDisabledByUserInput,
+            }:
+                tap = (tap_holder or {}).get("tap")
+                if tap is not None:
+                    Quartz.CGEventTapEnable(tap, True)
+                return event
             ts = time.time()
             if type_ in _MOUSE_DOWN_TYPES:
                 point = Quartz.CGEventGetLocation(event)
@@ -79,15 +87,11 @@ def make_callback(out_queue: queue.Queue):
                     )
                 )
             elif type_ == Quartz.kCGEventKeyDown:
-                keycode = Quartz.CGEventGetIntegerValueField(
-                    event, Quartz.kCGKeyboardEventKeycode
-                )
+                keycode = Quartz.CGEventGetIntegerValueField(event, Quartz.kCGKeyboardEventKeycode)
                 flags = Quartz.CGEventGetFlags(event)
                 chars = ""
                 try:
-                    actual, raw = Quartz.CGEventKeyboardGetUnicodeString(
-                        event, 8, None, None
-                    )
+                    actual, raw = Quartz.CGEventKeyboardGetUnicodeString(event, 8, None, None)
                     if raw:
                         chars = str(raw)
                 except Exception:
@@ -104,12 +108,8 @@ def make_callback(out_queue: queue.Queue):
                     )
                 )
             elif type_ == Quartz.kCGEventScrollWheel:
-                dy = Quartz.CGEventGetIntegerValueField(
-                    event, Quartz.kCGScrollWheelEventDeltaAxis1
-                )
-                dx = Quartz.CGEventGetIntegerValueField(
-                    event, Quartz.kCGScrollWheelEventDeltaAxis2
-                )
+                dy = Quartz.CGEventGetIntegerValueField(event, Quartz.kCGScrollWheelEventDeltaAxis1)
+                dx = Quartz.CGEventGetIntegerValueField(event, Quartz.kCGScrollWheelEventDeltaAxis2)
                 out_queue.put(("scroll", ts, {"dx": int(dx), "dy": int(dy)}))
         except Exception as e:
             # Never raise out of the callback — that would tear down the tap.
@@ -127,7 +127,8 @@ def install_tap(out_queue: queue.Queue) -> tuple[Any, Any] | tuple[None, None]:
     Returns (tap, source) on success; (None, None) if macOS denied tap creation
     (typically because Input Monitoring / Accessibility isn't granted).
     """
-    callback = make_callback(out_queue)
+    tap_holder: dict[str, Any] = {}
+    callback = make_callback(out_queue, tap_holder)
     tap = Quartz.CGEventTapCreate(
         Quartz.kCGSessionEventTap,
         Quartz.kCGHeadInsertEventTap,
@@ -138,9 +139,8 @@ def install_tap(out_queue: queue.Queue) -> tuple[Any, Any] | tuple[None, None]:
     )
     if tap is None:
         return None, None
+    tap_holder["tap"] = tap
     source = Quartz.CFMachPortCreateRunLoopSource(None, tap, 0)
-    Quartz.CFRunLoopAddSource(
-        Quartz.CFRunLoopGetCurrent(), source, Quartz.kCFRunLoopCommonModes
-    )
+    Quartz.CFRunLoopAddSource(Quartz.CFRunLoopGetCurrent(), source, Quartz.kCFRunLoopCommonModes)
     Quartz.CGEventTapEnable(tap, True)
     return tap, source

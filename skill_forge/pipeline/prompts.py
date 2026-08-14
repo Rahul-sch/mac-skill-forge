@@ -3,7 +3,7 @@
 Conventions baked into all four:
   - Output ONLY valid JSON. No prose. No markdown fences.
   - Each stage gets only what it needs (no whole-trace flooding).
-  - Step action is one of: click, type, press_key, wait, app_launch.
+  - Step action is one of: click, type, press_key, wait, app_launch, scroll.
   - Selector format is the AX path frozen in Phase 1.
   - Placeholder syntax is ${param_name}.
 """
@@ -42,7 +42,7 @@ Output a JSON object of the exact shape:
   {"steps": [<step>, ...]}
 where each step is:
   {"name": "<human-readable, e.g. 'Click eight'>",
-   "action": "<click|type|press_key|wait|app_launch>",
+   "action": "<click|type|press_key|wait|app_launch|scroll>",
    "selector": "<AX selector or null>",
    "args": {<action-specific>},
    "raw_event_indices": [<int>, ...]}
@@ -54,10 +54,13 @@ Action conventions:
   - wait: emit ONE wait step IMMEDIATELY after app_launch to let the
     window appear. Always include args = {"seconds": 1.5}. Do NOT emit a
     wait without an explicit seconds value.
-  - click: selector is the click event's ax_selector_at_point. args = {}.
+  - click: selector is the click event's ax_selector_at_point. If no selector
+    exists, set selector=null and args={"coordinates":[x,y],"button":"left|right"}.
     Name the step using AXIdentifier or AXDescription from the selector,
     not "Click button" — prefer "Click eight", "Click Add", "Click Equals".
-  - type: args = {"text": "<chars>"}. selector = null. CONVERT each
+  - type: args = {"text": "<chars>"}. For a text_input event, copy its
+    data.selector into the step selector so replay can re-focus the same field.
+    CONVERT each
     consecutive run of digit-button clicks (AXButton with AXIdentifier in
     {Zero..Nine} or single-digit AXDescription) into ONE type step whose
     text is the concatenation of those digits.
@@ -85,6 +88,8 @@ Action conventions:
     is wrong. Two operands always means two type steps.
   - press_key: args = {"keycode": <int>, "modifiers": [...]}. Use only
     when a real keydown event has a non-printable keycode.
+  - scroll: args={"dx":<number>,"dy":<number>}. Preserve each meaningful
+    scroll event. Use selector=null unless the trace identifies a target.
 
 Steps must be in chronological order. Every step's raw_event_indices must
 reference real events from the input "events" array.

@@ -53,6 +53,7 @@ APP_SWITCH_POLL_S = 0.25
 class _TextBuffer:
     chars: list[str] = field(default_factory=list)
     last_ts: float = 0.0
+    selector: str | None = None
 
     def is_empty(self) -> bool:
         return not self.chars
@@ -60,6 +61,7 @@ class _TextBuffer:
     def reset(self) -> None:
         self.chars = []
         self.last_ts = 0.0
+        self.selector = None
 
 
 def coalesce_keydown(
@@ -103,6 +105,7 @@ class RecorderSession:
         self._sysw = AXUIElementCreateSystemWide()
         self._text_buf = _TextBuffer()
         self._last_frontmost: str | None = None
+        self._in_secure_field = False
 
     # ------------------------------------------------------------------ run
 
@@ -115,7 +118,7 @@ class RecorderSession:
 
         prev_sigint = signal.signal(signal.SIGINT, lambda *_: self.stop_event.set())
 
-        tap, _source = install_tap(self.queue)
+        tap, source = install_tap(self.queue)
         if tap is None:
             self._cleanup()
             print(
@@ -127,9 +130,7 @@ class RecorderSession:
             signal.signal(signal.SIGINT, prev_sigint)
             return 1
 
-        worker = threading.Thread(
-            target=self._worker_loop, name="recorder-worker", daemon=True
-        )
+        worker = threading.Thread(target=self._worker_loop, name="recorder-worker", daemon=True)
         capture = threading.Thread(
             target=every_n_seconds_loop,
             args=(self.frames_dir, self.frame_interval, self.stop_event, self._on_frame),
@@ -153,10 +154,15 @@ class RecorderSession:
             signal.signal(signal.SIGINT, prev_sigint)
 
         log.info("Stopping; draining queue...")
-        self.queue.put(None)  # sentinel
-        worker.join(timeout=3.0)
         capture.join(timeout=3.0)
         switcher.join(timeout=2.0)
+        self.queue.put(None)  # producers stopped; sentinel is now last
+        worker.join(timeout=3.0)
+
+        Quartz.CGEventTapEnable(tap, False)
+        Quartz.CFRunLoopRemoveSource(
+            Quartz.CFRunLoopGetCurrent(), source, Quartz.kCFRunLoopCommonModes
+        )
 
         self._flush_text_buffer(time.time())
         self.end_ts = time.time()
@@ -176,8 +182,6 @@ class RecorderSession:
                     and (time.time() - self._text_buf.last_ts) > TEXT_FLUSH_IDLE_S
                 ):
                     self._flush_text_buffer(time.time())
-                if self.stop_event.is_set() and self.queue.empty():
-                    return
                 continue
             if item is None:
                 return
@@ -187,10 +191,7 @@ class RecorderSession:
             # Flush typed text buffer on user-initiated events only — frame
             # events from the screen-capture thread are passive timestamps
             # and must NOT fragment a typing run.
-            if (
-                kind not in ("keydown", "frame")
-                and not self._text_buf.is_empty()
-            ):
+            if kind not in ("keydown", "frame") and not self._text_buf.is_empty():
                 self._flush_text_buffer(ts)
 
             if kind == "click":
@@ -216,12 +217,24 @@ class RecorderSession:
         if self._is_secure_field_focused():
             if not self._text_buf.is_empty():
                 self._flush_text_buffer(ts)
-            return  # silently drop secret keystrokes
+            if not self._in_secure_field:
+                self._write(
+                    {
+                        "ts": ts,
+                        "type": "secure_input",
+                        "data": {"redacted": True, "selector": self._focused_selector()},
+                    }
+                )
+                self._in_secure_field = True
+            return
+        self._in_secure_field = False
 
         action, payload = coalesce_keydown(
             self._text_buf, ts, data.get("chars", ""), data.get("modifiers", [])
         )
         if action == "buffer":
+            if self._text_buf.selector is None:
+                self._text_buf.selector = self._focused_selector()
             return
         if action == "flush":
             self._flush_text_buffer(ts)
@@ -239,7 +252,7 @@ class RecorderSession:
             {
                 "ts": self._text_buf.last_ts,
                 "type": "text_input",
-                "data": {"text": text},
+                "data": {"text": text, "selector": self._text_buf.selector},
             }
         )
         self._text_buf.reset()
@@ -261,6 +274,11 @@ class RecorderSession:
         if focused is None:
             return False
         return get_attr(focused, "AXSubrole") == "AXSecureTextField"
+
+    def _focused_selector(self) -> str | None:
+        focused_app = get_attr(self._sysw, "AXFocusedApplication")
+        focused = get_attr(focused_app, "AXFocusedUIElement") if focused_app else None
+        return selector_for(focused) or None
 
     # -------------------------------------------------------------- helpers
 

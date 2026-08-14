@@ -19,8 +19,9 @@ from skill_forge.pipeline.schema import VALID_ACTIONS, Skill
 
 # --------------------------------------------------------- claude_client unit
 
+
 def test_strip_fence_with_json_marker():
-    assert _strip_fence("```json\n{\"a\":1}\n```") == '{"a":1}'
+    assert _strip_fence('```json\n{"a":1}\n```') == '{"a":1}'
 
 
 def test_strip_fence_no_fence():
@@ -34,13 +35,12 @@ def test_strip_fence_bare_fence():
 def _make_fake_post(text: str):
     def fake_post(payload, timeout=60.0):
         return {"choices": [{"message": {"content": text}}]}
+
     return fake_post
 
 
 def test_call_json_strips_fence(monkeypatch):
-    monkeypatch.setattr(
-        claude_client, "_post", _make_fake_post('```json\n{"ok": true}\n```')
-    )
+    monkeypatch.setattr(claude_client, "_post", _make_fake_post('```json\n{"ok": true}\n```'))
     monkeypatch.setenv("GROQ_API_KEY", "test-key")
     out = claude_client.call_json("sys", "user", model="m")
     assert out == {"ok": True}
@@ -57,28 +57,31 @@ def test_call_json_raises_bad_json_after_max_attempts(monkeypatch, tmp_path):
 
 # -------------------------------------------------------- orchestrator wiring
 
+
 def test_orchestrator_assembles_skill_from_canned_responses(monkeypatch, tmp_path):
     """Patch call_json with a per-stage queue and check the assembled Skill."""
     canned: list = [
         # 1. segmenter (returns wrapped object due to JSON mode)
         {"segments": [{"start_idx": 0, "end_idx": 3, "summary": "use calculator to add"}]},
         # 2. abstractor (also wrapped)
-        {"steps": [
-            {
-                "name": "Launch Calculator",
-                "action": "app_launch",
-                "selector": None,
-                "args": {"bundle_id": "com.apple.calculator"},
-                "raw_event_indices": [0],
-            },
-            {
-                "name": "Type first operand",
-                "action": "type",
-                "selector": None,
-                "args": {"text": "2"},
-                "raw_event_indices": [1],
-            },
-        ]},
+        {
+            "steps": [
+                {
+                    "name": "Launch Calculator",
+                    "action": "app_launch",
+                    "selector": None,
+                    "args": {"bundle_id": "com.apple.calculator"},
+                    "raw_event_indices": [0],
+                },
+                {
+                    "name": "Type first operand",
+                    "action": "type",
+                    "selector": None,
+                    "args": {"text": "2"},
+                    "raw_event_indices": [1],
+                },
+            ]
+        },
         # 3. parameterizer
         {
             "parameters": [
@@ -172,6 +175,14 @@ def test_orchestrator_mock_bypasses_llm(tmp_path):
     assert skill.name == "mock-skill"
     assert skill.parameters[0].name == "x"
     assert skill.steps[0].action == "app_launch"
+
+
+def test_orchestrator_rejects_recordings_with_secure_input(tmp_path):
+    (tmp_path / "trace.jsonl").write_text(
+        json.dumps({"ts": 1.0, "type": "secure_input", "data": {"redacted": True}})
+    )
+    with pytest.raises(ValueError, match="secure-field"):
+        orchestrator.build_skill(tmp_path)
 
 
 def test_model_id_lives_in_one_place():

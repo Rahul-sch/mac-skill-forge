@@ -50,7 +50,7 @@ class Segment:
 
 def parse_selector(s: str) -> list[Segment]:
     segments: list[Segment] = []
-    for raw in s.split("/"):
+    for raw in _split_unquoted(s, "/"):
         raw = raw.strip()
         if not raw:
             continue
@@ -61,7 +61,7 @@ def parse_selector(s: str) -> list[Segment]:
         attrs: dict[str, str] = {}
         attr_blob = m.group(2)
         if attr_blob:
-            for pair in attr_blob.split(";"):
+            for pair in _split_unquoted(attr_blob, ";"):
                 pair = pair.strip()
                 if not pair:
                     continue
@@ -69,7 +69,7 @@ def parse_selector(s: str) -> list[Segment]:
                 key = key.strip()
                 value = value.strip()
                 if value.startswith("'") and value.endswith("'") and len(value) >= 2:
-                    value = value[1:-1]
+                    value = _unescape(value[1:-1])
                 attrs[key] = value
         segments.append(Segment(role=role, attrs=attrs))
     return segments
@@ -79,7 +79,7 @@ def serialize_segments(segments: list[Segment]) -> str:
     parts = []
     for seg in segments:
         if seg.attrs:
-            inner = "; ".join(f"{k}='{v}'" for k, v in seg.attrs.items())
+            inner = "; ".join(f"{k}='{_escape(v)}'" for k, v in seg.attrs.items())
             parts.append(f"{seg.role}[{inner}]")
         else:
             parts.append(seg.role)
@@ -123,9 +123,10 @@ def _attrs_for_segment(elem: Any, parent: Any, role: str) -> dict[str, str]:
             attrs["bundle"] = bundle
         return attrs
 
-    for key, (ax_name, max_len) in _KEY_TO_AX_ATTR.items():
-        if len(attrs) >= 3:
-            break
+    # Prefer one stable identifier over a brittle conjunction of every visible
+    # value. Text-field values and document/window titles routinely change.
+    for key in ("id", "desc", "title", "value"):
+        ax_name, max_len = _KEY_TO_AX_ATTR[key]
         v = get_attr(elem, ax_name)
         if v is None:
             continue
@@ -135,6 +136,7 @@ def _attrs_for_segment(elem: Any, parent: Any, role: str) -> dict[str, str]:
         if max_len is not None and len(s) > max_len:
             continue
         attrs[key] = s
+        break
 
     if not attrs and parent is not None:
         idx = _index_among_same_role_siblings(elem, parent, role)
@@ -177,7 +179,12 @@ def _try_find_once(segments: list[Segment], root: Any) -> Any | None:
         app_elem = _app_element_for_bundle(bundle)
         if app_elem is None:
             return None
-        return _descend(app_elem, segments[1:])
+        result = _descend(app_elem, segments[1:])
+        if result is not None:
+            return result
+        # App updates frequently insert/remove anonymous AXGroup containers.
+        # Fall back to an exact leaf-attribute search within the same app.
+        return _find_matching_descendant(app_elem, segments[-1], max_depth=16)
     return _descend(root, segments)
 
 
@@ -227,3 +234,64 @@ def _matches_attrs(elem: Any, attrs: dict[str, str]) -> bool:
         if got != want:
             return False
     return True
+
+
+def _find_matching_descendant(root: Any, segment: Segment, max_depth: int) -> Any | None:
+    stack: list[tuple[Any, int]] = [(root, 0)]
+    visited = 0
+    while stack and visited < 10_000:
+        elem, depth = stack.pop()
+        visited += 1
+        if get_role(elem) == segment.role and _matches_attrs(elem, segment.attrs):
+            return elem
+        if depth < max_depth:
+            stack.extend((child, depth + 1) for child in reversed(get_children(elem)))
+    return None
+
+
+def _split_unquoted(value: str, delimiter: str) -> list[str]:
+    """Split selector syntax while preserving escaped delimiters in quotes."""
+    parts: list[str] = []
+    current: list[str] = []
+    quoted = False
+    escaped = False
+    for char in value:
+        if escaped:
+            current.append(char)
+            escaped = False
+            continue
+        if char == "\\":
+            current.append(char)
+            escaped = True
+            continue
+        if char == "'":
+            quoted = not quoted
+        if char == delimiter and not quoted:
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+    if quoted:
+        raise ValueError("unterminated quote in selector")
+    parts.append("".join(current))
+    return parts
+
+
+def _escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
+def _unescape(value: str) -> str:
+    out: list[str] = []
+    escaped = False
+    for char in value:
+        if escaped:
+            out.append(char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        else:
+            out.append(char)
+    if escaped:
+        out.append("\\")
+    return "".join(out)

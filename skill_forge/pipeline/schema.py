@@ -99,6 +99,8 @@ def validate_skill(skill: Skill) -> Skill:
             coords = step.args.get("coordinates")
             if not _valid_coordinates(coords):
                 errors.append(f"{prefix}: click needs a selector or [x, y] coordinates")
+        if step.action == "click" and step.args.get("button", "left") not in {"left", "right"}:
+            errors.append(f"{prefix}: click button must be 'left' or 'right'")
         elif step.action == "type" and not isinstance(step.args.get("text"), str):
             errors.append(f"{prefix}: type needs a string text argument")
         elif step.action == "press_key":
@@ -110,7 +112,11 @@ def validate_skill(skill: Skill) -> Skill:
                 errors.append(f"{prefix}: modifiers contain an unsupported value")
         elif step.action == "wait":
             seconds = step.args.get("seconds")
-            if not isinstance(seconds, (int, float)) or isinstance(seconds, bool) or not 0 < seconds <= 300:
+            if (
+                not isinstance(seconds, (int, float))
+                or isinstance(seconds, bool)
+                or not 0 < seconds <= 300
+            ):
                 errors.append(f"{prefix}: seconds must be greater than 0 and at most 300")
         elif step.action == "app_launch":
             bundle_id = step.args.get("bundle_id")
