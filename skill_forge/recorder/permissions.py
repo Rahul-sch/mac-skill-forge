@@ -12,16 +12,15 @@ def accessibility_granted() -> bool:
 
 
 def screen_recording_granted() -> bool:
-    """Probe Screen Recording by attempting a 1x1 capture of the main display.
-
-    On first call macOS will prompt the user. Subsequent calls return immediately.
-    """
+    """Check Screen Recording without prompting when the preflight API exists."""
     try:
         import Quartz
     except ImportError:
         return False
 
-    main_display_id = Quartz.CGMainDisplayID()
+    preflight = getattr(Quartz, "CGPreflightScreenCaptureAccess", None)
+    if preflight is not None:
+        return bool(preflight())
     rect = Quartz.CGRectMake(0, 0, 1, 1)
     image = Quartz.CGWindowListCreateImage(
         rect,
@@ -32,5 +31,16 @@ def screen_recording_granted() -> bool:
     if image is None:
         return False
     width = Quartz.CGImageGetWidth(image)
-    _ = main_display_id
     return width > 0
+
+
+def input_monitoring_granted() -> bool:
+    """Return whether global input listening is permitted on this macOS version."""
+    try:
+        import Quartz
+    except ImportError:
+        return False
+    preflight = getattr(Quartz, "CGPreflightListenEventAccess", None)
+    if preflight is None:
+        return accessibility_granted()
+    return bool(preflight())

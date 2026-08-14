@@ -14,7 +14,7 @@ Add ${a} and ${b} using the macOS Calculator app.
 ## How to invoke
 Run: `forge replay <this-dir> --params '{"a": 2, "b": 3}'`
 
-## Steps (for reference; replay.py is the source of truth)
+## Steps (for reference; skill.json is the source of truth)
 1. Launch Calculator (`AXApplication[bundle='com.apple.calculator']`)
 2. Click `All Clear` to reset state
 3. Click digits for `${a}`

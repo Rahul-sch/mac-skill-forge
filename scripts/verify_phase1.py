@@ -95,7 +95,9 @@ def main() -> None:
     app_elem = find_calc_app_element()
     if app_elem is None:
         fail("Calculator process not found after launch")
-    ok(f"Calculator running (bundle={bundle_id_for_pid(NSWorkspace.sharedWorkspace().frontmostApplication().processIdentifier())})")
+    ok(
+        f"Calculator running (bundle={bundle_id_for_pid(NSWorkspace.sharedWorkspace().frontmostApplication().processIdentifier())})"
+    )
 
     candidates = find_eight_button(app_elem)
     if not candidates:

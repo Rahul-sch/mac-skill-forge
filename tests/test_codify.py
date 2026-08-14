@@ -29,9 +29,7 @@ def _hello_skill() -> Skill:
         name="hello",
         description="Say hello",
         parameters=[
-            Parameter(
-                name="name", type="string", description="who to greet", default=None
-            )
+            Parameter(name="name", type="string", description="who to greet", default=None)
         ],
         steps=[
             Step(
@@ -54,9 +52,10 @@ def _hello_skill() -> Skill:
 
 # -------------------------------------------------------------- schema gates
 
+
 def test_valid_actions_is_frozen():
     assert VALID_ACTIONS == frozenset(
-        {"click", "type", "press_key", "wait", "app_launch", "scroll"}
+        {"click", "type", "press_key", "wait", "app_launch", "scroll", "read"}
     )
 
 
@@ -114,14 +113,12 @@ def test_skill_to_md_with_default():
     skill = Skill(
         name="x",
         description="y",
-        parameters=[
-            Parameter(name="n", type="number", description="d", default="42")
-        ],
+        parameters=[Parameter(name="n", type="number", description="d", default="42")],
         steps=[],
     )
     out = skill_to_md(skill)
     assert "- `n` (number, default=42): d" in out
-    assert '--params \'{"n": 42}\'' in out
+    assert "--params '{\"n\": 42}'" in out
 
 
 # --------------------------------------------------------- skill_to_replay_py
@@ -207,9 +204,7 @@ def test_validation_rejects_unknown_actions():
 def test_handwritten_calculator_skill_md_parses():
     """The hand-written fixture is the truth-test for Phase 4. At minimum it
     must have YAML frontmatter and the documented sections."""
-    text = (
-        __import__("pathlib").Path("examples/calculator_handwritten/SKILL.md").read_text()
-    )
+    text = __import__("pathlib").Path("examples/calculator_handwritten/SKILL.md").read_text()
     assert text.startswith("---\nname: calculator-add\n")
     assert "## Parameters" in text
     assert "## How to invoke" in text
@@ -218,9 +213,17 @@ def test_handwritten_calculator_skill_md_parses():
 
 
 def test_handwritten_calculator_replay_is_valid_python():
-    src = __import__("pathlib").Path(
-        "examples/calculator_handwritten/scripts/replay.py"
-    ).read_text()
+    src = (
+        __import__("pathlib").Path("examples/calculator_handwritten/scripts/replay.py").read_text()
+    )
     ast.parse(src)
-    assert "from skill_forge.replay.actions" in src
-    assert "from skill_forge.replay.ax_resolve" in src
+    assert "from skill_forge.replay.runner import run_manifest" in src
+
+
+def test_checked_in_example_manifests_are_valid():
+    from pathlib import Path
+
+    paths = list(Path("examples").glob("*/skill.json"))
+    assert paths
+    for path in paths:
+        load_manifest(path)

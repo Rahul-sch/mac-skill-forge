@@ -131,6 +131,7 @@ def main() -> None:
             str(SESSION_DIR),
             "--frame-interval",
             str(FRAME_INTERVAL),
+            "--capture-frames",
         ],
         env=env,
         stdout=subprocess.PIPE,

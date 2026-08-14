@@ -172,6 +172,17 @@ def scroll(dx: float = 0, dy: float = 0) -> None:
     Quartz.CGEventPost(Quartz.kCGHIDEventTap, event)
 
 
+def read(selector: str, attribute: str = "AXValue", strip: str = "") -> str:
+    """Read one allow-listed AX attribute from a resolved element."""
+    if attribute not in {"AXValue", "AXTitle", "AXDescription"}:
+        raise ValueError(f"unsupported readable AX attribute: {attribute}")
+    elem = find(selector)
+    value = get_attr(elem, attribute)
+    if value is None:
+        raise RuntimeError(f"{selector!r} has no {attribute}")
+    return str(value).strip(strip)
+
+
 def app_launch(bundle_id: str) -> None:
     """Launch (or activate) an app by bundle id. Uses `open -b` for reliability."""
     proc = subprocess.run(

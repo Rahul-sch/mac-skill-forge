@@ -35,11 +35,7 @@ KEYCODE_TAB = 48
 
 RECIPIENT = "you@example.com"
 SUBJECT = "Morning status — 2026-05-04"
-BODY = (
-    "Yesterday: shipped phase 5 of skill-forge. "
-    "Today: phase 6 demo recording. "
-    "Blockers: none."
-)
+BODY = "Yesterday: shipped phase 5 of skill-forge. Today: phase 6 demo recording. Blockers: none."
 
 
 def main() -> None:

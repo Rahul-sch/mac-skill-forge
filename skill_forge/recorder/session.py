@@ -88,12 +88,15 @@ def coalesce_keydown(
 
 
 class RecorderSession:
-    def __init__(self, out_dir: Path, frame_interval: float = 2.0) -> None:
+    def __init__(
+        self, out_dir: Path, frame_interval: float = 2.0, capture_frames: bool = False
+    ) -> None:
         self.out_dir = Path(out_dir)
         self.frames_dir = self.out_dir / "frames"
         self.trace_path = self.out_dir / "trace.jsonl"
         self.meta_path = self.out_dir / "meta.json"
         self.frame_interval = frame_interval
+        self.capture_frames = capture_frames
 
         self.queue: queue.Queue = queue.Queue()
         self.stop_event = threading.Event()
@@ -112,7 +115,12 @@ class RecorderSession:
     def run(self) -> int:
         setup_logging()
         self.out_dir.mkdir(parents=True, exist_ok=True)
-        self.frames_dir.mkdir(parents=True, exist_ok=True)
+        if any(self.out_dir.iterdir()):
+            raise FileExistsError(
+                f"recording directory is not empty: {self.out_dir} (choose another --out)"
+            )
+        if self.capture_frames:
+            self.frames_dir.mkdir(parents=True, exist_ok=True)
         self.start_ts = time.time()
         self._trace_fp = self.trace_path.open("w", encoding="utf-8")
 
@@ -131,17 +139,20 @@ class RecorderSession:
             return 1
 
         worker = threading.Thread(target=self._worker_loop, name="recorder-worker", daemon=True)
-        capture = threading.Thread(
-            target=every_n_seconds_loop,
-            args=(self.frames_dir, self.frame_interval, self.stop_event, self._on_frame),
-            name="recorder-capture",
-            daemon=True,
-        )
+        capture = None
+        if self.capture_frames:
+            capture = threading.Thread(
+                target=every_n_seconds_loop,
+                args=(self.frames_dir, self.frame_interval, self.stop_event, self._on_frame),
+                name="recorder-capture",
+                daemon=True,
+            )
         switcher = threading.Thread(
             target=self._app_switch_loop, name="recorder-switch", daemon=True
         )
         worker.start()
-        capture.start()
+        if capture is not None:
+            capture.start()
         switcher.start()
 
         log.info("Recording to %s — Ctrl-C to stop.", self.out_dir)
@@ -154,7 +165,8 @@ class RecorderSession:
             signal.signal(signal.SIGINT, prev_sigint)
 
         log.info("Stopping; draining queue...")
-        capture.join(timeout=3.0)
+        if capture is not None:
+            capture.join(timeout=3.0)
         switcher.join(timeout=2.0)
         self.queue.put(None)  # producers stopped; sentinel is now last
         worker.join(timeout=3.0)

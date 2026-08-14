@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 VALID_ACTIONS: frozenset[str] = frozenset(
-    {"click", "type", "press_key", "wait", "app_launch", "scroll"}
+    {"click", "type", "press_key", "wait", "app_launch", "scroll", "read"}
 )
 VALID_PARAMETER_TYPES: frozenset[str] = frozenset({"string", "number", "file", "date"})
 VALID_MODIFIERS: frozenset[str] = frozenset({"cmd", "shift", "opt", "ctrl"})
@@ -128,6 +128,12 @@ def validate_skill(skill: Skill) -> Skill:
                 errors.append(f"{prefix}: scroll dx and dy must be numbers")
             elif dx == 0 and dy == 0:
                 errors.append(f"{prefix}: scroll dx and dy cannot both be zero")
+        elif step.action == "read":
+            attribute = step.args.get("attribute", "AXValue")
+            if not step.selector:
+                errors.append(f"{prefix}: read needs a selector")
+            if attribute not in {"AXValue", "AXTitle", "AXDescription"}:
+                errors.append(f"{prefix}: read attribute is not allowed")
 
     unknown = sorted(referenced - parameter_names)
     if unknown:

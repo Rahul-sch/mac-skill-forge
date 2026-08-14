@@ -28,7 +28,7 @@ import httpx
 log = logging.getLogger(__name__)
 
 _FENCE_RE = re.compile(r"^```(?:json)?\s*\n(.*?)\n```\s*$", re.DOTALL)
-_GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+_DEFAULT_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 class BadJSONFromModel(RuntimeError):
@@ -37,16 +37,20 @@ class BadJSONFromModel(RuntimeError):
         self.attempt = attempt
         self.parse_error = parse_error
         super().__init__(
-            f"model returned non-JSON after {attempt} attempt(s); raw saved to "
-            f"last_failed_response.json. parser said: {parse_error}"
+            f"model returned non-JSON after {attempt} attempt(s); parser said: {parse_error}"
         )
 
 
 def _api_key() -> str:
-    key = os.environ.get("GROQ_API_KEY")
+    key = os.environ.get("FORGE_API_KEY") or os.environ.get("GROQ_API_KEY")
     if not key:
-        raise RuntimeError("no API key in env (set GROQ_API_KEY)")
+        raise RuntimeError("no API key in env (set FORGE_API_KEY or GROQ_API_KEY)")
     return key
+
+
+def endpoint() -> str:
+    """Configured OpenAI-compatible chat-completions endpoint."""
+    return os.environ.get("FORGE_LLM_URL", _DEFAULT_URL)
 
 
 def _post(payload: dict, timeout: float = 60.0, max_429_retries: int = 5) -> dict:
@@ -54,7 +58,7 @@ def _post(payload: dict, timeout: float = 60.0, max_429_retries: int = 5) -> dic
     with httpx.Client(timeout=timeout) as client:
         for attempt in range(max_429_retries + 1):
             r = client.post(
-                _GROQ_URL,
+                endpoint(),
                 headers={
                     "Authorization": f"Bearer {_api_key()}",
                     "Content-Type": "application/json",
@@ -127,7 +131,8 @@ def call_json(
             last_err = str(e)
             log.warning("attempt %d: JSON parse failed: %s", attempt, e)
 
-    Path("last_failed_response.json").write_text(last_raw, encoding="utf-8")
+    if os.environ.get("FORGE_SAVE_FAILED_RESPONSE") == "1":
+        Path("last_failed_response.json").write_text(last_raw, encoding="utf-8")
     raise BadJSONFromModel(last_raw, max_attempts, last_err)
 
 

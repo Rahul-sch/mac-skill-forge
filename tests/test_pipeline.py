@@ -52,7 +52,22 @@ def test_call_json_raises_bad_json_after_max_attempts(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     with pytest.raises(claude_client.BadJSONFromModel):
         claude_client.call_json("sys", "user", model="m", max_attempts=2)
-    assert (tmp_path / "last_failed_response.json").exists()
+    assert not (tmp_path / "last_failed_response.json").exists()
+
+
+def test_call_json_can_opt_in_to_failed_response_dump(monkeypatch, tmp_path):
+    monkeypatch.setattr(claude_client, "_post", _make_fake_post("not json at all"))
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.setenv("FORGE_SAVE_FAILED_RESPONSE", "1")
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(claude_client.BadJSONFromModel):
+        claude_client.call_json("sys", "user", model="m", max_attempts=1)
+    assert (tmp_path / "last_failed_response.json").read_text() == "not json at all"
+
+
+def test_endpoint_is_configurable(monkeypatch):
+    monkeypatch.setenv("FORGE_LLM_URL", "http://127.0.0.1:1234/v1/chat/completions")
+    assert claude_client.endpoint() == "http://127.0.0.1:1234/v1/chat/completions"
 
 
 # -------------------------------------------------------- orchestrator wiring
@@ -167,6 +182,7 @@ def test_orchestrator_assembles_skill_from_canned_responses(monkeypatch, tmp_pat
     assert skill.steps[1].args == {"text": "${a}"}
     assert all(s.action in VALID_ACTIONS for s in skill.steps)
     assert queue == []  # all 4 stage calls consumed
+    assert not (session / "_pipeline_debug").exists()
 
 
 def test_orchestrator_mock_bypasses_llm(tmp_path):

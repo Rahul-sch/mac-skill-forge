@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 
 from skill_forge.pipeline.schema import Parameter, Skill, Step, validate_skill
@@ -21,7 +22,7 @@ MODEL = "llama-3.3-70b-versatile"
 log = logging.getLogger(__name__)
 
 
-def build_skill(session_dir: Path, mock: bool = False) -> Skill:
+def build_skill(session_dir: Path, mock: bool = False, keep_debug: bool = False) -> Skill:
     if mock:
         return _mock_skill()
 
@@ -45,26 +46,28 @@ def build_skill(session_dir: Path, mock: bool = False) -> Skill:
     log.info("loaded %d events (%d after dropping frames)", len(raw), len(events))
 
     debug_dir = session_dir / "_pipeline_debug"
-    debug_dir.mkdir(exist_ok=True)
+    if keep_debug:
+        debug_dir.mkdir(exist_ok=True)
+    model = os.environ.get("FORGE_MODEL", MODEL)
 
     log.info("[1/4] segmenter")
-    segments = segmenter.run(events, model=MODEL)
-    (debug_dir / "1_segments.json").write_text(json.dumps(segments, indent=2))
+    segments = segmenter.run(events, model=model)
+    _write_debug(debug_dir / "1_segments.json", segments, keep_debug)
     log.info("  -> %d segments", len(segments))
 
     log.info("[2/4] abstractor")
-    raw_steps = abstractor.run(events, segments, model=MODEL)
-    (debug_dir / "2_abstractor.json").write_text(json.dumps(raw_steps, indent=2))
+    raw_steps = abstractor.run(events, segments, model=model)
+    _write_debug(debug_dir / "2_abstractor.json", raw_steps, keep_debug)
     log.info("  -> %d steps", len(raw_steps))
 
     log.info("[3/4] parameterizer")
-    parameterized = parameterizer.run(raw_steps, model=MODEL)
-    (debug_dir / "3_parameterizer.json").write_text(json.dumps(parameterized, indent=2))
+    parameterized = parameterizer.run(raw_steps, model=model)
+    _write_debug(debug_dir / "3_parameterizer.json", parameterized, keep_debug)
     log.info("  -> %d parameters", len(parameterized.get("parameters", [])))
 
     log.info("[4/4] validator")
-    final = validator.run(parameterized, model=MODEL)
-    (debug_dir / "4_validator.json").write_text(json.dumps(final, indent=2))
+    final = validator.run(parameterized, model=model)
+    _write_debug(debug_dir / "4_validator.json", final, keep_debug)
     log.info(
         "  -> skill_name=%s, %d steps",
         final.get("skill_name"),
@@ -72,6 +75,11 @@ def build_skill(session_dir: Path, mock: bool = False) -> Skill:
     )
 
     return validate_skill(_assemble(final))
+
+
+def _write_debug(path: Path, value: object, enabled: bool) -> None:
+    if enabled:
+        path.write_text(json.dumps(value, indent=2), encoding="utf-8")
 
 
 def _assemble(final: dict) -> Skill:

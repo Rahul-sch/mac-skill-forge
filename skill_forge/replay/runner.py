@@ -17,6 +17,7 @@ from typing import Any
 
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
 from skill_forge.codify.manifest import load_manifest
 from skill_forge.pipeline.schema import Parameter, Skill
@@ -63,9 +64,7 @@ def parse_parameters(body: str) -> list[dict[str, object]]:
                 "type": type_.strip(),
                 "required": qualifier == "required",
                 "default": (
-                    None
-                    if qualifier == "required"
-                    else qualifier.removeprefix("default=").strip()
+                    None if qualifier == "required" else qualifier.removeprefix("default=").strip()
                 ),
                 "description": description.strip(),
             }
@@ -101,9 +100,7 @@ def run_skill(
     return _run_legacy_script(skill_md, replay_py, params, dry_run)
 
 
-def run_manifest(
-    manifest_path: Path, params: dict[str, Any], dry_run: bool = False
-) -> int:
+def run_manifest(manifest_path: Path, params: dict[str, Any], dry_run: bool = False) -> int:
     try:
         skill = load_manifest(manifest_path)
         resolved = resolve_params(skill, params)
@@ -166,7 +163,9 @@ def _coerce_parameter(parameter: Parameter, value: Any) -> Any:
         try:
             return date.fromisoformat(str(value)).isoformat()
         except ValueError as exc:
-            raise TypeError(f"parameter {parameter.name!r} must be an ISO date (YYYY-MM-DD)") from exc
+            raise TypeError(
+                f"parameter {parameter.name!r} must be an ISO date (YYYY-MM-DD)"
+            ) from exc
     raise TypeError(f"parameter {parameter.name!r} has unsupported type {parameter.type!r}")
 
 
@@ -183,6 +182,7 @@ def _execute(skill: Skill, params: dict[str, Any]) -> None:
         click,
         focus,
         press_key,
+        read,
         scroll,
         type_text,
         wait,
@@ -219,6 +219,13 @@ def _execute(skill: Skill, params: dict[str, Any]) -> None:
             if selector:
                 focus(selector)
             scroll(float(args.get("dx", 0)), float(args.get("dy", 0)))
+        elif step.action == "read":
+            value = read(
+                selector or "",
+                attribute=str(args.get("attribute", "AXValue")),
+                strip=str(args.get("strip", "")),
+            )
+            console.print(value)
 
 
 def _print_plan(skill: Skill, params: dict[str, Any]) -> None:
@@ -233,7 +240,7 @@ def _print_plan(skill: Skill, params: dict[str, Any]) -> None:
             for key, value in step.args.items()
         }
         details = selector or json.dumps(args, ensure_ascii=False)
-        table.add_row(str(index), step.action, step.name, details)
+        table.add_row(str(index), step.action, step.name, Text(details))
     console.print(table)
 
 

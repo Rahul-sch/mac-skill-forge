@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "name": "calculator-add",
+  "description": "Add two numbers using macOS Calculator and return the result",
+  "parameters": [
+    {"name": "a", "type": "number", "description": "first operand", "default": null},
+    {"name": "b", "type": "number", "description": "second operand", "default": null}
+  ],
+  "steps": [
+    {"name": "Launch Calculator", "action": "app_launch", "selector": null, "args": {"bundle_id": "com.apple.calculator"}, "assertions": ["Calculator is running"]},
+    {"name": "Wait for Calculator", "action": "wait", "selector": null, "args": {"seconds": 1.0}, "assertions": []},
+    {"name": "Reset Calculator", "action": "click", "selector": "AXApplication[bundle='com.apple.calculator']/AXButton[id='AllClear']", "args": {}, "assertions": []},
+    {"name": "Enter first operand", "action": "type", "selector": null, "args": {"text": "${a}"}, "assertions": []},
+    {"name": "Choose addition", "action": "click", "selector": "AXApplication[bundle='com.apple.calculator']/AXButton[id='Add']", "args": {}, "assertions": []},
+    {"name": "Enter second operand", "action": "type", "selector": null, "args": {"text": "${b}"}, "assertions": []},
+    {"name": "Calculate result", "action": "click", "selector": "AXApplication[bundle='com.apple.calculator']/AXButton[id='Equals']", "args": {}, "assertions": []},
+    {"name": "Wait for result", "action": "wait", "selector": null, "args": {"seconds": 0.4}, "assertions": []},
+    {"name": "Read result", "action": "read", "selector": "AXApplication[bundle='com.apple.calculator']/AXWindow[id='main']/AXGroup[pos='0']/AXSplitGroup[id='main, SidebarNavigationSplitView']/AXGroup[pos='0']/AXGroup[id='CalculatorKeypadView']/AXGroup[pos='0']/AXScrollArea[id='StandardInputView']/AXStaticText", "args": {"attribute": "AXValue", "strip": "‎"}, "assertions": ["The calculated result is printed"]}
+  ]
+}

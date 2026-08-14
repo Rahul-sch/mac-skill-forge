@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "name": "send-email",
+  "description": "Composes a Mail draft with a specified recipient, subject, and body for review",
+  "parameters": [
+    {"name": "recipient", "type": "string", "description": "Recipient email", "default": "you@example.com"},
+    {"name": "subject", "type": "string", "description": "Email subject", "default": "Morning status"},
+    {"name": "body", "type": "string", "description": "Email body", "default": "Yesterday: finished planned work. Today: continuing. Blockers: none."}
+  ],
+  "steps": [
+    {"name": "Launch Mail", "action": "app_launch", "selector": null, "args": {"bundle_id": "com.apple.mail"}, "assertions": ["Mail is running"]},
+    {"name": "Wait for Mail", "action": "wait", "selector": null, "args": {"seconds": 1.5}, "assertions": []},
+    {"name": "Open new message", "action": "press_key", "selector": null, "args": {"keycode": 45, "modifiers": ["cmd"]}, "assertions": []},
+    {"name": "Wait for compose window", "action": "wait", "selector": null, "args": {"seconds": 1.0}, "assertions": []},
+    {"name": "Type recipient", "action": "type", "selector": "AXApplication[bundle='com.apple.mail']/AXTextField[id='Mail.toField']", "args": {"text": "${recipient}"}, "assertions": []},
+    {"name": "Type subject", "action": "type", "selector": "AXApplication[bundle='com.apple.mail']/AXTextField[id='Mail.subjectField']", "args": {"text": "${subject}"}, "assertions": []},
+    {"name": "Move to message body", "action": "press_key", "selector": null, "args": {"keycode": 48, "modifiers": []}, "assertions": []},
+    {"name": "Type body", "action": "type", "selector": null, "args": {"text": "${body}"}, "assertions": ["A draft is composed but not sent"]}
+  ]
+}

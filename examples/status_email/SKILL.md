@@ -1,21 +1,21 @@
 ---
 name: send-email
-description: Sends a new email with specified recipient, subject, and body using the Mail app
+description: Composes a Mail draft with a specified recipient, subject, and body for review
 ---
 
 # send-email
 
-Sends a new email with specified recipient, subject, and body using the Mail app
+Composes a Mail draft with specified content. It does not send the message.
 
 ## Parameters
 - `recipient` (string, default=you@example.com): Recipient email
-- `subject` (string, default=Morning status — 2026-05-04): Email subject
-- `body` (string, default=Yesterday: shipped phase 5 of skill-forge. Today: phase 6 demo recording. Blockers: none.): Email body
+- `subject` (string, default=Morning status): Email subject
+- `body` (string, default=Yesterday: finished planned work. Today: continuing. Blockers: none.): Email body
 
 ## How to invoke
-Run: `forge replay <this-dir> --params '{"recipient": "you@example.com", "subject": "Morning status \u2014 2026-05-04", "body": "Yesterday: shipped phase 5 of skill-forge. Today: phase 6 demo recording. Blockers: none."}'`
+Run with defaults: `forge replay <this-dir>` or override values with `--params '{"recipient":"team@example.com"}'`.
 
-## Steps (for reference; replay.py is the source of truth)
+## Steps (for reference; skill.json is the source of truth)
 1. Launch Mail app
 2. Wait for window to appear
 3. Open new message

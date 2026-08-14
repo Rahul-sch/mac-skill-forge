@@ -48,6 +48,7 @@ description: y
 
 # ---------------------------------------------------------- frontmatter / params
 
+
 def test_parse_frontmatter_basic():
     fm, body = parse_frontmatter(CALC_MD)
     assert fm == {"name": "calculator-add", "description": "Add two numbers"}
@@ -85,6 +86,7 @@ def test_parse_parameters_ignores_other_sections():
 
 
 # --------------------------------------------------------- Levenshtein helper
+
 
 def test_levenshtein_basic():
     assert _levenshtein("", "") == 0

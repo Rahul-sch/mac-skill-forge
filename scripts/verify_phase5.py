@@ -50,7 +50,15 @@ def main() -> None:
     print(f"=> forge build {SESSION_DIR} --out {SKILL_DIR}")
     t0 = time.time()
     proc = subprocess.run(
-        [str(FORGE), "build", str(SESSION_DIR), "--out", str(SKILL_DIR)],
+        [
+            str(FORGE),
+            "build",
+            str(SESSION_DIR),
+            "--out",
+            str(SKILL_DIR),
+            "--yes",
+            "--keep-debug",
+        ],
         capture_output=True,
         text=True,
         timeout=180,
@@ -92,6 +100,7 @@ def main() -> None:
     # declaration order from the generated SKILL.md and assign 7 -> first,
     # 5 -> second so the test is name-agnostic.
     from skill_forge.replay.runner import parse_frontmatter, parse_parameters
+
     text = skill_md.read_text()
     _fm, body = parse_frontmatter(text)
     declared = parse_parameters(body)
