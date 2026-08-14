@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import platform
 import shutil
 import sys
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -248,6 +250,37 @@ def replay(
         raise typer.Exit(2)
     rc = run_skill(Path(skill), parsed, dry_run=dry_run, allow_script=allow_script)
     raise typer.Exit(rc)
+
+
+@app.command(name="eval")
+def evaluate_skill(
+    skill: str = typer.Argument(..., help="Generated skill directory to evaluate."),
+    params: str = typer.Option("{}", "--params", help="JSON object of parameters."),
+    runs: int = typer.Option(3, "--runs", min=1, max=100, help="Number of replay attempts."),
+    delay: float = typer.Option(1.0, "--delay", min=0, help="Seconds between attempts."),
+) -> None:
+    """Replay a validated skill repeatedly and report its observed success rate."""
+    from skill_forge.replay.runner import run_skill
+
+    try:
+        parsed = json.loads(params)
+    except json.JSONDecodeError as exc:
+        console.print(f"[red]ERROR[/red]: invalid --params JSON: {exc}")
+        raise typer.Exit(2) from None
+    if not isinstance(parsed, dict):
+        console.print("[red]ERROR[/red]: --params must decode to a JSON object")
+        raise typer.Exit(2)
+
+    results: list[int] = []
+    for attempt in range(1, runs + 1):
+        console.rule(f"evaluation run {attempt}/{runs}")
+        results.append(run_skill(Path(skill), parsed))
+        if attempt < runs and delay:
+            time.sleep(delay)
+    passed = sum(code == 0 for code in results)
+    console.print(f"success rate: [bold]{passed}/{runs} ({passed / runs:.0%})[/bold]")
+    if passed != runs:
+        raise typer.Exit(1)
 
 
 @app.command(name="_devsnap", hidden=True)

@@ -30,13 +30,14 @@ The video is ~60 seconds. Each frame ~15s.
    - Show terminal: "Session complete: sessions/status_email"
 
 2. **`forge build sessions/status_email --out skills/status_email`** (the magic)
+   - Show and accept the privacy confirmation before the four model calls.
    - Show terminal logs streaming:
      ```
      [1/4] segmenter -> 5 segments
      [2/4] abstractor -> 8 steps
      [3/4] parameterizer -> 3 parameters
      [4/4] validator -> skill_name=send-email
-     wrote skills/status_email/SKILL.md and scripts/replay.py
+     wrote skills/status_email/SKILL.md, skill.json, and scripts/replay.py
      ```
    - Cut to `cat skills/status_email/SKILL.md` showing the 3 parameters and 8 steps
 
@@ -47,9 +48,10 @@ The video is ~60 seconds. Each frame ~15s.
    - Body: a 3-liner with different content
    - All filled in automatically over ~3 seconds
 
-4. **The kicker** — show that the SKILL.md is just a markdown file
-   - `cat skills/status_email/SKILL.md` again
-   - "any Claude agent can read this file and call replay.py with whatever inputs it wants"
+4. **The kicker** — show the readable skill plus validated manifest
+   - Run `forge replay skills/status_email --dry-run` to display the full plan.
+   - Run `forge install skills/status_email --agent codex` (or `claude`).
+   - Explain that agents read `SKILL.md`, while trusted runtime actions come from `skill.json`.
 
 ## Recording the actual video
 

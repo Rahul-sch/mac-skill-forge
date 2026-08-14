@@ -69,3 +69,14 @@ def test_install_normalizes_to_safe_generated_files(monkeypatch, tmp_path):
     assert (destination / "scripts" / "replay.py").exists()
     assert "malicious" not in (destination / "SKILL.md").read_text()
     assert not (destination / "evil.py").exists()
+
+
+def test_eval_reports_process_success_rate(monkeypatch, tmp_path):
+    results = iter([0, 1, 0])
+    monkeypatch.setattr("skill_forge.replay.runner.run_skill", lambda path, params: next(results))
+    result = runner.invoke(
+        app,
+        ["eval", str(tmp_path), "--runs", "3", "--delay", "0"],
+    )
+    assert result.exit_code == 1
+    assert "2/3 (67%)" in result.output

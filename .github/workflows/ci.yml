@@ -31,4 +31,12 @@ jobs:
         run: uv run ruff check .
 
       - name: Test (pytest)
-        run: uv run pytest -q
+        run: uv run pytest -q --cov=skill_forge --cov=landing --cov-fail-under=35
+
+      - name: Type check (mypy)
+        run: uv run mypy skill_forge landing
+
+      - name: Build package and smoke-test CLI
+        run: |
+          uv build
+          uv run forge --version

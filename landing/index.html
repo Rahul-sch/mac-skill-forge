@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Skill Forge — Teach your Mac once.</title>
+<meta name="description" content="Record yourself doing something on macOS. Skill Forge watches once, then any Claude agent can replay it with new inputs forever." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          serif: ['"Instrument Serif"', 'serif'],
+          sans: ['Inter', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  html, body { font-family: 'Inter', sans-serif; }
+  h1, h2, h3, h4, h5, h6, .font-serif { font-family: 'Instrument Serif', serif; }
+
+  /* Liquid glass — used for Begin Journey buttons */
+  .liquid-glass {
+    position: relative;
+    background: rgba(255, 255, 255, 0.01);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+  }
+  .liquid-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.15) 20%,
+      rgba(255, 255, 255, 0)    40%,
+      rgba(255, 255, 255, 0)    60%,
+      rgba(255, 255, 255, 0.15) 80%,
+      rgba(255, 255, 255, 0.45) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Entrance animations */
+  @keyframes fade-rise {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
+  .animate-fade-rise          { animation: fade-rise 0.8s ease-out      both; }
+  .animate-fade-rise-delay    { animation: fade-rise 0.8s ease-out 0.2s both; }
+  .animate-fade-rise-delay-2  { animation: fade-rise 0.8s ease-out 0.4s both; }
+
+  /* Soft vignette — only darkens the corners, center stays bright */
+  .vignette {
+    background: radial-gradient(120% 80% at 50% 40%, transparent 0%, rgba(0,0,0,0.15) 75%, rgba(0,0,0,0.35) 100%);
+  }
+
+  .status-pill {
+    min-height: 2.75rem;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 18px rgba(0, 0, 0, 0.4);
+  }
+</style>
+</head>
+<body class="bg-black text-white" style="background: radial-gradient(circle at 50% 35%, #173657 0%, #05080d 52%, #000 100%);">
+
+<section class="relative min-h-screen overflow-hidden">
+
+  <!-- Background image (GIF supported — animated frames will play). -->
+  <img
+    src="bg.gif"
+    alt=""
+    class="absolute inset-0 w-full h-full object-cover z-0"
+    onerror="this.style.display='none'"
+  />
+
+  <!-- Light overlay — keeps the image vivid while easing white-text contrast -->
+  <div class="absolute inset-0 z-0 bg-black/20"></div>
+  <div class="absolute inset-0 vignette z-0"></div>
+
+  <!-- Navbar -->
+  <nav class="relative z-10 max-w-7xl mx-auto flex justify-between items-center px-8 py-6">
+    <a href="#" class="font-serif text-3xl tracking-tight text-white">
+      Skill Forge
+    </a>
+
+    <div class="hidden md:flex gap-10 text-sm text-white">
+      <a href="#" class="hover:opacity-80 transition-opacity">Home</a>
+      <a href="https://github.com/Rahul-sch/mac-skill-forge#how-it-works" class="hover:opacity-80 transition-opacity">Docs</a>
+      <a href="https://github.com/Rahul-sch/mac-skill-forge/tree/main/examples" class="hover:opacity-80 transition-opacity">Examples</a>
+      <a href="https://github.com/Rahul-sch/mac-skill-forge" class="hover:opacity-80 transition-opacity">GitHub</a>
+    </div>
+
+    <button type="button" data-run-automation
+       class="liquid-glass rounded-full px-6 py-2.5 text-sm text-white hover:scale-[1.03] transition-transform inline-flex items-center justify-center">
+      Run draft demo
+    </button>
+  </nav>
+
+  <!-- Hero -->
+  <div class="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-32 pb-40">
+    <h1 class="font-serif text-white text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-[-2.46px] max-w-7xl animate-fade-rise">
+      Teach your Mac once.
+    </h1>
+
+    <p class="text-base sm:text-lg max-w-2xl mt-8 leading-relaxed text-white animate-fade-rise-delay">
+      Skill Forge watches you do something on macOS one time — sending the morning status email, filing the weekly report — and turns it into a reusable skill any Claude agent can replay with new inputs. Stop doing the chore again.
+    </p>
+
+    <button type="button" data-run-automation
+       class="liquid-glass rounded-full px-14 py-5 text-base text-white mt-12 hover:scale-[1.03] transition-transform inline-flex items-center justify-center animate-fade-rise-delay-2">
+      Run Mail draft demo
+    </button>
+
+    <p id="automation-status" class="status-pill mt-5 text-sm animate-fade-rise-delay-2" aria-live="polite"></p>
+  </div>
+
+</section>
+
+<script>
+  const buttons = Array.from(document.querySelectorAll("[data-run-automation]"));
+  const statusText = document.getElementById("automation-status");
+  let pollTimer = null;
+  let sessionToken = null;
+
+  function setRunning(running) {
+    buttons.forEach((button) => {
+      button.disabled = running;
+      button.classList.toggle("opacity-60", running);
+      button.classList.toggle("cursor-not-allowed", running);
+      button.textContent = running ? "Running..." : "Run Mail draft demo";
+    });
+  }
+
+  async function refreshStatus() {
+    const response = await fetch("/automation-status", {
+      cache: "no-store",
+      headers: { "X-Skill-Forge-Token": sessionToken },
+    });
+    const status = await response.json();
+    setRunning(status.running);
+    statusText.textContent = status.message || "";
+
+    if (!status.running && pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  async function runAutomation() {
+    const approved = window.confirm(
+      "This local demo will open Apple Mail and compose a draft addressed to you@example.com. It will not send the message. Continue?"
+    );
+    if (!approved) return;
+    setRunning(true);
+    statusText.textContent = "Starting Mail automation...";
+
+    try {
+      const response = await fetch("/run-demo", {
+        method: "POST",
+        headers: { "X-Skill-Forge-Token": sessionToken },
+      });
+      const payload = await response.json();
+      statusText.textContent = payload.message || "Mail automation started.";
+      if (!response.ok) setRunning(false);
+      if (!pollTimer) pollTimer = setInterval(refreshStatus, 1000);
+    } catch (error) {
+      setRunning(false);
+      statusText.textContent = "Could not reach the local automation server.";
+    }
+  }
+
+  async function initializeDemo() {
+    const response = await fetch("/automation-session", { cache: "no-store" });
+    const session = await response.json();
+    sessionToken = session.token;
+    await refreshStatus();
+  }
+
+  buttons.forEach((button) => button.addEventListener("click", runAutomation));
+  initializeDemo().catch(() => {
+    setRunning(true);
+    statusText.textContent = "Local demo unavailable. Start with: python3 landing/server.py";
+  });
+</script>
+
+</body>
+</html>

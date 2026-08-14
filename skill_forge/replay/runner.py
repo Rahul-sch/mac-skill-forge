@@ -200,7 +200,7 @@ def _execute(skill: Skill, params: dict[str, Any]) -> None:
             app_launch(args["bundle_id"])
             wait_for_app(args["bundle_id"])
         elif step.action == "wait":
-            wait(args["seconds"])
+            wait(float(args["seconds"]))
         elif step.action == "click":
             target: str | tuple[float, float]
             if selector:
